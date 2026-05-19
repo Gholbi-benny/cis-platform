@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Role, User } from '../data/mockData';
+import { login as apiLogin } from '../api';
 import { userAccounts } from '../data/mockData';
 
 const PROFILE_OVERRIDES_KEY = 'cis_profile_overrides';
@@ -28,14 +29,9 @@ function effectivePassword(accountId: number, basePassword: string): string {
   return o?.password ?? basePassword;
 }
 
-function effectiveName(account: { id: number; name: string }): string {
-  const o = loadProfileOverrides()[account.id];
-  return o?.name ?? account.name;
-}
-
 type AuthContextType = {
   user: User | null;
-  login: (email: string, password: string, role: Role) => boolean;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   hasPermission: (permission: string) => boolean;
   hasRole: (roles: Role[]) => boolean;
@@ -72,25 +68,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(next));
   };
 
-  const login = (email: string, password: string, role: Role): boolean => {
-    const found = userAccounts.find(u => u.email === email && u.role === role);
-    if (!found) return false;
-    const pwd = effectivePassword(found.id, found.password);
-    if (password !== pwd) return false;
-    const sessionUser: User = {
-      id: found.id,
-      name: effectiveName(found),
-      email: found.email,
-      role: found.role,
-      avatar: found.avatar,
-    };
-    persistSessionUser(sessionUser);
-    return true;
+  const login = async (email: string, password: string): Promise<User> => {
+    try {
+      const response = await apiLogin(email, password);
+      persistSessionUser(response.user);
+      return response.user;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Échec de la connexion';
+      throw new Error(message);
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
 
   const updateDisplayName = (name: string) => {
@@ -126,21 +118,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser) as User;
-        const account = userAccounts.find(u => u.id === parsed.id);
-        if (account && account.email === parsed.email && account.role === parsed.role) {
-          const merged: User = {
-            ...parsed,
-            name: effectiveName({ id: account.id, name: account.name }),
-          };
-          setUser(merged);
-        }
-      } catch {
-        localStorage.removeItem('user');
-      }
+    if (!savedUser) return;
+
+    try {
+      setUser(JSON.parse(savedUser) as User);
+    } catch {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
     }
   }, []);
 

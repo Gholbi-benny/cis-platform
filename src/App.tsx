@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProjectProvider } from "./contexts/ProjectContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -46,7 +47,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredPermission?:
 
 // Layout pour les pages authentifiées
 const AuthenticatedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="min-h-screen bg-blue-600 text-white">
+  <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
     <Navbar />
     <div className="flex">
       <Sidebar />
@@ -59,10 +60,11 @@ const AuthenticatedLayout: React.FC<{ children: React.ReactNode }> = ({ children
 
 function App() {
   return (
-    <AuthProvider>
-      <ProjectProvider>
-        <BrowserRouter>
-          <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <ProjectProvider>
+          <BrowserRouter>
+            <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route
@@ -130,6 +132,7 @@ function App() {
         </BrowserRouter>
       </ProjectProvider>
     </AuthProvider>
+  </ThemeProvider>
   );
 }
 

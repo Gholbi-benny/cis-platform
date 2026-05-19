@@ -28,11 +28,12 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const handleLogin = () => {
-    if (login(email, password, role)) {
-      navigate(getHomePage(role));
-    } else {
-      setError("Identifiants ou rôle incorrect");
+  const handleLogin = async () => {
+    try {
+      const user = await login(email, password);
+      navigate(getHomePage(user.role));
+    } catch {
+      setError("Identifiants incorrects");
     }
   };
 
