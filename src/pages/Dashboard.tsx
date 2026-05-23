@@ -1,20 +1,69 @@
+import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useProjectContext } from "../contexts/ProjectContext";
 import Card from "../components/Card";
-import { dashboardData, messages, tasks } from "../data/mockData";
+import { getTasks } from "../api";
+import type { Task } from "../data/mockData";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { projects } = useProjectContext();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Calculs des métriques
+  const normalizeTask = (task: any): Task => ({
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    status:
+      task.status === 'Terminé'
+        ? 'Terminé'
+        : task.status === 'En cours'
+        ? 'En cours'
+        : task.status === 'En retard'
+        ? 'En retard'
+        : 'À faire',
+    assignee: task.assignee_name || task.assignee || 'Non assigné',
+    projectId: task.project_id ?? task.projectId ?? 0,
+    priority:
+      task.priority === 'Élevée'
+        ? 'Élevée'
+        : task.priority === 'Moyenne'
+        ? 'Moyenne'
+        : 'Faible',
+    dueDate: task.due_date || task.dueDate || '',
+    comments: task.comments ?? [],
+  });
+
+  useEffect(() => {
+    const loadTasks = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const fetchedTasks = await getTasks();
+        setTasks(fetchedTasks.map(normalizeTask));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erreur lors du chargement des tâches.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTasks();
+  }, []);
+
   const completedTasks = tasks.filter(task => task.status === 'Terminé').length;
   const inProgressTasks = tasks.filter(task => task.status === 'En cours').length;
   const delayedTasks = tasks.filter(task => task.status === 'En retard').length;
   const activeProjects = projects.filter(project => project.status === 'En cours').length;
-  const messagesToProcess = messages.filter(msg => msg.status !== 'Validé').length;
+  const openItems = tasks.filter(task => task.status !== 'Terminé').length;
   const technicalTasks = tasks.filter(task => task.assignee === user?.name);
   const projectByManager = projects.filter(project => project.manager === user?.name);
+  const performance = completedTasks + inProgressTasks + delayedTasks > 0
+    ? Math.round((completedTasks / (completedTasks + inProgressTasks + delayedTasks)) * 100)
+    : 0;
 
   return (
     <div className="w-full max-w-6xl mx-auto text-center">
@@ -60,17 +109,17 @@ export default function Dashboard() {
           <h3 className="text-lg font-semibold mb-4 text-white">Performance globale</h3>
           <div className="text-center">
             <div className="text-5xl font-bold text-blue-400 mb-2">
-              {dashboardData.performance}%
+              {performance}%
             </div>
             <div className="text-sm text-slate-400 uppercase tracking-wide font-semibold mb-4">Taux de réussite</div>
             <div className="mt-4 flex gap-2 items-center">
               <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
                 <div
                   className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500"
-                  style={{ width: `${dashboardData.performance}%` }}
+                  style={{ width: `${performance}%` }}
                 ></div>
               </div>
-              <span className="text-sm font-semibold text-slate-300">{dashboardData.performance}%</span>
+              <span className="text-sm font-semibold text-slate-300">{performance}%</span>
             </div>
           </div>
         </div>
@@ -87,8 +136,8 @@ export default function Dashboard() {
               <p className="text-3xl font-bold text-white">{activeProjects}</p>
             </div>
             <div className="bg-slate-700/50 border border-slate-600 p-4 rounded-lg hover:border-blue-500/30 transition">
-              <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Messages à traiter</div>
-              <p className="text-3xl font-bold text-white">{messagesToProcess}</p>
+              <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Tâches ouvertes</div>
+              <p className="text-3xl font-bold text-white">{openItems}</p>
             </div>
           </div>
         </div>
@@ -145,12 +194,12 @@ export default function Dashboard() {
           <p className="text-blue-200 mb-4">Suivi des demandes clients et préparation des rendez-vous.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-blue-950 p-4 rounded-3xl border border-blue-800">
-              <h4 className="font-semibold text-white">Demandes actives</h4>
-              <p className="text-3xl font-bold text-white">{messagesToProcess}</p>
+              <h4 className="font-semibold text-white">Tâches ouvertes</h4>
+              <p className="text-3xl font-bold text-white">{openItems}</p>
             </div>
             <div className="bg-blue-900 p-4 rounded-3xl border border-blue-700">
-              <h4 className="font-semibold text-white">Rendez-vous proposés</h4>
-              <p className="text-3xl font-bold text-white">{messages.filter(m => m.reply).length}</p>
+              <h4 className="font-semibold text-white">Projets actifs</h4>
+              <p className="text-3xl font-bold text-white">{activeProjects}</p>
             </div>
           </div>
         </div>

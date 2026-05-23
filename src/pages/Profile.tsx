@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { updateUser } from "../api";
 
 export default function Profile() {
-  const { user, updateDisplayName, updatePassword } = useAuth();
+  const { user, updateDisplayName } = useAuth();
   const [name, setName] = useState(user?.name ?? "");
 
   useEffect(() => {
@@ -18,7 +19,7 @@ export default function Profile() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pwdMessage, setPwdMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
-  const handleSaveName = (e: React.FormEvent) => {
+  const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();
     setNameMessage(null);
     const trimmed = name.trim();
@@ -26,11 +27,22 @@ export default function Profile() {
       setNameMessage("err");
       return;
     }
-    updateDisplayName(trimmed);
-    setNameMessage("ok");
+
+    if (!user) {
+      setNameMessage("err");
+      return;
+    }
+
+    try {
+      await updateUser({ id: user.id, name: trimmed });
+      updateDisplayName(trimmed);
+      setNameMessage("ok");
+    } catch (error) {
+      setNameMessage("err");
+    }
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwdMessage(null);
     if (newPassword.length < 4) {
@@ -41,14 +53,19 @@ export default function Profile() {
       setPwdMessage({ type: "err", text: "La confirmation ne correspond pas au nouveau mot de passe." });
       return;
     }
-    const ok = updatePassword(currentPassword, newPassword);
-    if (ok) {
+    if (!user) {
+      setPwdMessage({ type: "err", text: "Utilisateur non authentifié." });
+      return;
+    }
+
+    try {
+      await updateUser({ id: user.id, password: newPassword });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setPwdMessage({ type: "ok", text: "Mot de passe mis à jour." });
-    } else {
-      setPwdMessage({ type: "err", text: "Mot de passe actuel incorrect." });
+    } catch (error) {
+      setPwdMessage({ type: "err", text: error instanceof Error ? error.message : "Impossible de changer le mot de passe." });
     }
   };
 

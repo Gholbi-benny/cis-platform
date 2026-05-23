@@ -27,7 +27,7 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   const body = isJson ? await response.json().catch(() => null) : null;
 
   if (!response.ok) {
-    const message = body?.message || response.statusText || 'Erreur réseau';
+    const message = body?.error || body?.message || response.statusText || 'Erreur réseau';
     throw new Error(message);
   }
 
@@ -55,8 +55,18 @@ export type LoginResponse = {
 };
 
 export type CreateProjectRequest = Omit<Project, 'id'>;
+export type UpdateProjectRequest = Partial<Omit<Project, 'id'>> & { id: number };
+export type CreateTaskRequest = Omit<Task, 'id'>;
+export type UpdateTaskRequest = Partial<Omit<Task, 'id'>> & { id: number };
+export type UpdateUserRequest = Partial<User> & { id: number };
 
-export type UpdateUserRequest = User;
+export type TaskComment = {
+  id: number;
+  author_name: string;
+  content: string;
+  created_at: string;
+  task_id: number;
+};
 
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   const response = await request<LoginResponse>('/auth/login', {
@@ -68,8 +78,16 @@ export const login = async (email: string, password: string): Promise<LoginRespo
   return response;
 };
 
+export const logout = (): void => {
+  localStorage.removeItem(LOCAL_STORAGE_TOKEN_KEY);
+};
+
 export const getProjects = async (): Promise<Project[]> => {
   return request<Project[]>('/projects');
+};
+
+export const getProjectById = async (projectId: number): Promise<Project> => {
+  return request<Project>(`/projects/${projectId}`);
 };
 
 export const createProject = async (project: CreateProjectRequest): Promise<Project> => {
@@ -79,12 +97,43 @@ export const createProject = async (project: CreateProjectRequest): Promise<Proj
   });
 };
 
-export const getTasks = async (): Promise<Task[]> => {
-  return request<Task[]>('/tasks');
+export const updateProject = async (project: UpdateProjectRequest): Promise<Project> => {
+  return request<Project>(`/projects/${project.id}`, {
+    method: 'PUT',
+    body: JSON.stringify(project),
+  });
+};
+
+export const getTasks = async (projectId?: number, assignedTo?: number): Promise<Task[]> => {
+  const params = new URLSearchParams();
+  if (projectId !== undefined) params.append('project_id', String(projectId));
+  if (assignedTo !== undefined) params.append('assigned_to', String(assignedTo));
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return request<Task[]>(`/tasks${query}`);
+};
+
+export const createTask = async (task: CreateTaskRequest): Promise<Task> => {
+  return request<Task>('/tasks', {
+    method: 'POST',
+    body: JSON.stringify(task),
+  });
+};
+
+export const updateTask = async (task: UpdateTaskRequest): Promise<Task> => {
+  const { id, ...payload } = task;
+  return request<Task>(`/tasks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 };
 
 export const getUsers = async (): Promise<User[]> => {
   return request<User[]>('/users');
+};
+
+export const getUser = async (userId: number): Promise<User> => {
+  return request<User>(`/users/${userId}`);
 };
 
 export const updateUser = async (user: UpdateUserRequest): Promise<User> => {
@@ -94,6 +143,14 @@ export const updateUser = async (user: UpdateUserRequest): Promise<User> => {
   });
 };
 
-export const logout = (): void => {
-  localStorage.removeItem(LOCAL_STORAGE_TOKEN_KEY);
+export const getComments = async (taskId: number): Promise<TaskComment[]> => {
+  const query = `?task_id=${encodeURIComponent(String(taskId))}`;
+  return request<TaskComment[]>(`/commentaires${query}`);
+};
+
+export const createComment = async (taskId: number, content: string): Promise<TaskComment> => {
+  return request<TaskComment>('/commentaires', {
+    method: 'POST',
+    body: JSON.stringify({ task_id: taskId, content }),
+  });
 };

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { projects as initialProjects, type Project } from '../data/mockData';
+import { type Project } from '../data/mockData';
+import { getProjects } from '../api';
 
 interface ProjectContextType {
   projects: Project[];
@@ -39,25 +40,33 @@ const checkProjectStatus = (project: Project): string => {
 };
 
 export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
 
-  // Fonction pour vérifier et mettre à jour automatiquement les statuts
-  const updateProjectStatusesAutomatically = () => {
-    setProjects(prevProjects =>
-      prevProjects.map(project => ({
+  const loadProjects = async () => {
+    try {
+      const fetchedProjects = await getProjects();
+      setProjects(fetchedProjects.map(project => ({
         ...project,
-        status: checkProjectStatus(project)
-      }))
-    );
+        status: checkProjectStatus(project),
+      })));
+    } catch (error) {
+      console.error('Impossible de charger les projets:', error);
+    }
   };
 
   // Vérifier les statuts au montage et périodiquement
   useEffect(() => {
-    updateProjectStatusesAutomatically();
-    
-    // Vérifier toutes les heures
-    const interval = setInterval(updateProjectStatusesAutomatically, 60 * 60 * 1000);
-    
+    loadProjects();
+
+    const interval = setInterval(() => {
+      setProjects(prevProjects =>
+        prevProjects.map(project => ({
+          ...project,
+          status: checkProjectStatus(project),
+        }))
+      );
+    }, 60 * 60 * 1000);
+
     return () => clearInterval(interval);
   }, []);
 
