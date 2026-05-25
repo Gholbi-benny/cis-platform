@@ -58,7 +58,9 @@ export default function Dashboard() {
   const technicalTasks = tasks.filter(task => task.assignee === user?.name);
   const projectByManager = projects.filter(project => project.manager === user?.name);
   const total = completedTasks + inProgressTasks + delayedTasks;
-  const performance = total > 0 ? Math.round((completedTasks / total) * 100) : 0;
+ const totalProjects = projects.length;
+const completedProjects = projects.filter(p => (p.status ?? p.title) === 'Terminé' || p.status === 'Terminé').length;
+const performance = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0;
 
   return (
     <div className="w-full max-w-6xl mx-auto text-center">
