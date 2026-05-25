@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { createProject, getProjects } from "../api";
 
 type Project = {
@@ -18,20 +19,17 @@ type Project = {
 
 export default function Projects() {
   const { hasPermission, user } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [editedProject, setEditedProject] = useState<Project | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
   const [newProjectEndDate, setNewProjectEndDate] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
 
   const canCreateProject = hasPermission('manage_projects');
-  const canManageProjects = hasPermission('manage_projects');
 
   const normalizeProject = (p: any): Project => ({
     id: p.id,
@@ -64,33 +62,6 @@ export default function Projects() {
     loadProjects();
   }, []);
 
-  const openProject = (project: Project, edit = false) => {
-    setSelectedProject(project);
-    setEditedProject({ ...project });
-    setIsEditing(edit);
-  };
-
-  const closeModal = () => {
-    setSelectedProject(null);
-    setEditedProject(null);
-    setIsEditing(false);
-  };
-
-  const handleEditChange = (field: keyof Project, value: string) => {
-    if (!editedProject) return;
-    setEditedProject({ ...editedProject, [field]: value } as Project);
-  };
-
-  const saveProject = () => {
-    if (editedProject) {
-      setProjects((current) =>
-        current.map((project) => (project.id === editedProject.id ? editedProject : project))
-      );
-      setSelectedProject(editedProject);
-      setIsEditing(false);
-    }
-  };
-
   const handleCreateProject = async () => {
     setCreateError(null);
     if (!newProjectName.trim() || !newProjectDescription.trim()) {
@@ -121,10 +92,7 @@ export default function Projects() {
             <p className="text-blue-200 mt-2">Vision synthétique des projets et détails métiers.</p>
           </div>
           {canCreateProject && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="rounded-2xl bg-gray-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700"
-            >
+            <button onClick={() => setShowForm(true)} className="rounded-2xl bg-gray-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700">
               Nouveau projet
             </button>
           )}
@@ -162,90 +130,18 @@ export default function Projects() {
                   <div><span className="font-semibold text-white">Début:</span> {project.startDate}</div>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <button onClick={() => openProject(project, false)} className="rounded-2xl bg-gray-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-gray-700">Détails</button>
-                  {canManageProjects && (
-                    <button onClick={() => openProject(project, true)} className="rounded-2xl bg-gray-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-gray-700">Modifier</button>
-                  )}
+                  <button
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                    className="rounded-2xl bg-gray-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-gray-700"
+                  >
+                    Détails
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Modal détails */}
-        {selectedProject && (
-          <div className="fixed inset-0 bg-blue-950/80 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-blue-600 border border-blue-500 rounded-3xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-xl shadow-blue-950/20">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-white">{selectedProject.name}</h2>
-                <button onClick={closeModal} className="text-blue-200 hover:text-white">✕</button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold">Description</h3>
-                  {isEditing ? (
-                    <textarea value={editedProject?.description ?? ''} onChange={(e) => handleEditChange('description', e.target.value)} className="w-full border rounded p-2 text-sm" rows={4} />
-                  ) : (
-                    <p className="text-slate-400">{selectedProject.description}</p>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-semibold">Dates</h3>
-                    <p>Début: {selectedProject.startDate}</p>
-                    <p>Fin: {selectedProject.endDate || 'Non définie'}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Équipe</h3>
-                    <p>Chef: {selectedProject.manager}</p>
-                    <p>Membres: {selectedProject.team.length > 0 ? selectedProject.team.join(', ') : 'Aucun'}</p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Documents ({selectedProject.documents.length})</h3>
-                  {selectedProject.documents.length === 0 ? (
-                    <p className="text-slate-500">Aucun document</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {selectedProject.documents.map((doc) => (
-                        <div key={doc.id} className="flex justify-between items-center p-2 rounded-3xl bg-slate-950 border border-slate-800">
-                          <span className="text-slate-300">{doc.name}</span>
-                          <span className="text-sm text-slate-500">{doc.size}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Commentaires ({selectedProject.comments.length})</h3>
-                  {selectedProject.comments.length === 0 ? (
-                    <p className="text-slate-500">Aucun commentaire</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {selectedProject.comments.map((comment) => (
-                        <div key={comment.id} className="p-3 rounded-3xl bg-slate-950 border border-slate-800">
-                          <div className="flex justify-between text-sm">
-                            <span className="font-medium text-slate-100">{comment.author}</span>
-                            <span className="text-slate-500">{comment.date}</span>
-                          </div>
-                          <p className="mt-1 text-slate-300">{comment.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {isEditing && (
-                  <div className="mt-6 flex justify-end gap-3">
-                    <button onClick={closeModal} className="rounded-2xl bg-gray-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700">Annuler</button>
-                    <button onClick={() => { saveProject(); closeModal(); }} className="rounded-2xl bg-gray-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700">Enregistrer</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Formulaire création */}
         {showForm && (
           <div className="fixed inset-0 bg-blue-950/80 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-blue-600 border border-blue-500 rounded-3xl p-6 max-w-md w-full">

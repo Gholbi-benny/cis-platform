@@ -12,6 +12,7 @@ import Tasks from "./pages/Tasks";
 import Messages from "./pages/Messages";
 import TechnicalStatus from "./pages/TechnicalStatus";
 import Profile from "./pages/Profile";
+import ProjectDashboard from "./pages/ProjectDashboard";
 
 const getHomePage = (role?: string) => {
   switch (role) {
@@ -27,7 +28,6 @@ const getHomePage = (role?: string) => {
   }
 };
 
-// Composant pour protéger les routes
 const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredPermission?: string }> = ({
   children,
   requiredPermission
@@ -45,7 +45,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; requiredPermission?:
   return <>{children}</>;
 };
 
-// Layout pour les pages authentifiées
 const AuthenticatedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
     <Navbar />
@@ -65,74 +64,84 @@ function App() {
         <ProjectProvider>
           <BrowserRouter>
             <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute requiredPermission="view_dashboard">
-                  <AuthenticatedLayout>
-                    <Dashboard />
-                  </AuthenticatedLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/projects"
-              element={
-                <ProtectedRoute requiredPermission="view_projects">
-                  <AuthenticatedLayout>
-                    <Projects />
-                  </AuthenticatedLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tasks"
-              element={
-                <ProtectedRoute requiredPermission="view_tasks">
-                  <AuthenticatedLayout>
-                    <Tasks />
-                  </AuthenticatedLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/messages"
-              element={
-                <ProtectedRoute requiredPermission="view_messages">
-                  <AuthenticatedLayout>
-                    <Messages />
-                  </AuthenticatedLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/technical-status"
-              element={
-                <ProtectedRoute requiredPermission="update_tasks">
-                  <AuthenticatedLayout>
-                    <TechnicalStatus />
-                  </AuthenticatedLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <AuthenticatedLayout>
-                    <Profile />
-                  </AuthenticatedLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </ProjectProvider>
-    </AuthProvider>
-  </ThemeProvider>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute requiredPermission="view_dashboard">
+                    <AuthenticatedLayout>
+                      <Dashboard />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects"
+                element={
+                  <ProtectedRoute requiredPermission="view_projects">
+                    <AuthenticatedLayout>
+                      <Projects />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/projects/:id"
+                element={
+                  <ProtectedRoute requiredPermission="view_projects">
+                    <AuthenticatedLayout>
+                      <ProjectDashboard />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <ProtectedRoute requiredPermission="view_tasks">
+                    <AuthenticatedLayout>
+                      <Tasks />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/messages"
+                element={
+                  <ProtectedRoute requiredPermission="view_messages">
+                    <AuthenticatedLayout>
+                      <Messages />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/technical-status"
+                element={
+                  <ProtectedRoute requiredPermission="update_tasks">
+                    <AuthenticatedLayout>
+                      <TechnicalStatus />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <AuthenticatedLayout>
+                      <Profile />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </ProjectProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

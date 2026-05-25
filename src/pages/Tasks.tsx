@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Task, User } from "../data/mockData";
 import { useAuth } from "../contexts/AuthContext";
-import { getTasks, getUsers, getProjects, createTask } from "../api";
+import { getTasks, getUsers, getProjects, createTask, updateTask } from "../api";
 
 type ProjectItem = {
   id: number;
@@ -16,6 +16,7 @@ export default function Tasks() {
   const [projectsList, setProjectsList] = useState<ProjectItem[]>([]);
   const [filter, setFilter] = useState<'all' | 'my' | 'pending' | 'completed'>('all');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [editTask, setEditTask] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +99,24 @@ export default function Tasks() {
       loadData();
     } catch (err) {
       console.error('Erreur création tâche:', err);
+    }
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editTask) return;
+    try {
+      await updateTask({
+        id: editTask.id,
+        title: editTask.title,
+        description: editTask.description,
+        status: editTask.status,
+        due_date: editTask.dueDate || null,
+        assigned_to: usersList.find(u => u.name === editTask.assignee)?.id ?? null,
+      });
+      setEditTask(null);
+      loadData();
+    } catch (err) {
+      console.error('Erreur modification tâche:', err);
     }
   };
 
@@ -188,7 +207,7 @@ export default function Tasks() {
                 <div className="flex flex-wrap gap-2">
                   <button onClick={() => setSelectedTask(task)} className="rounded-2xl bg-gray-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-gray-700">Détails</button>
                   {canAssignTasks && (
-                    <button className="rounded-2xl bg-gray-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-gray-700">Modifier</button>
+                    <button onClick={() => setEditTask({ ...task })} className="rounded-2xl bg-gray-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-gray-700">Modifier</button>
                   )}
                 </div>
               </div>
@@ -196,6 +215,7 @@ export default function Tasks() {
           </div>
         )}
 
+        {/* Modal détails */}
         {selectedTask && (
           <div className="fixed inset-0 bg-blue-950/80 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-blue-600 border border-blue-500 rounded-3xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-xl shadow-blue-950/20">
@@ -247,6 +267,57 @@ export default function Tasks() {
           </div>
         )}
 
+        {/* Modal modifier */}
+        {editTask && (
+          <div className="fixed inset-0 bg-blue-950/80 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-blue-600 border border-blue-500 rounded-3xl p-6 max-w-md w-full">
+              <h2 className="text-xl font-bold mb-4 text-white">Modifier la tâche</h2>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  value={editTask.title}
+                  onChange={e => setEditTask({ ...editTask, title: e.target.value })}
+                  className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white"
+                />
+                <textarea
+                  value={editTask.description}
+                  onChange={e => setEditTask({ ...editTask, description: e.target.value })}
+                  className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white h-24"
+                />
+                <select
+                  value={editTask.status}
+                  onChange={e => setEditTask({ ...editTask, status: e.target.value as Task['status'] })}
+                  className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white"
+                >
+                  <option value="À faire">À faire</option>
+                  <option value="En cours">En cours</option>
+                  <option value="Terminé">Terminé</option>
+                  <option value="En retard">En retard</option>
+                </select>
+                <select
+                  value={editTask.assignee}
+                  onChange={e => setEditTask({ ...editTask, assignee: e.target.value })}
+                  className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white"
+                >
+                  <option value="">Assigner à</option>
+                  {usersList.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                </select>
+                <input
+                  type="date"
+                  value={editTask.dueDate}
+                  onChange={e => setEditTask({ ...editTask, dueDate: e.target.value })}
+                  className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white"
+                />
+              </div>
+              <div className="mt-6 flex space-x-2">
+                <button onClick={handleUpdateTask} className="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700">Enregistrer</button>
+                <button onClick={() => setEditTask(null)} className="rounded-2xl bg-gray-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700">Annuler</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Formulaire création */}
         {showForm && (
           <div className="fixed inset-0 bg-blue-950/80 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-blue-600 border border-blue-500 rounded-3xl p-6 max-w-md w-full">
