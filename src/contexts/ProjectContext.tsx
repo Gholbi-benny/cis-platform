@@ -24,88 +24,74 @@ interface ProjectProviderProps {
   children: ReactNode;
 }
 
-const checkProjectStatus = (project: Project): string => {
-  const today = new Date();
-  const endDate = new Date(project.endDate);
-  const isOverdue = today > endDate;
-  const isCompleted = project.status === 'Terminé';
-
-  if (isCompleted) {
-    return 'Terminé';
-  } else if (isOverdue) {
-    return 'En retard';
-  } else {
-    return 'En cours';
-  }
-};
-
 export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const loadProjects = async () => {
+    setLoading(true);
     try {
       const fetchedProjects = await getProjects();
-      setProjects(fetchedProjects.map(project => ({
-        ...project,
-        status: checkProjectStatus(project),
-      })));
+      setProjects(
+        fetchedProjects.map((p: any) => ({
+          id: p.id,
+          name: p.title ?? p.name ?? 'Sans titre',
+          title: p.title,
+          description: p.description ?? '',
+          status: p.status ?? 'En cours',
+          manager: p.owner_name ?? 'Inconnu',
+          team: p.team ?? [],
+          documents: p.documents ?? [],
+          comments: p.comments ?? [],
+          startDate: p.created_at?.slice(0, 10) ?? '',
+          endDate: p.endDate ?? '',
+        }))
+      );
     } catch (error) {
       console.error('Impossible de charger les projets:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Vérifier les statuts au montage et périodiquement
   useEffect(() => {
     loadProjects();
-
-    const interval = setInterval(() => {
-      setProjects(prevProjects =>
-        prevProjects.map(project => ({
-          ...project,
-          status: checkProjectStatus(project),
-        }))
-      );
-    }, 60 * 60 * 1000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const updateProjectStatus = (projectId: number, status: string) => {
-    setProjects(prevProjects =>
-      prevProjects.map(project =>
-        project.id === projectId ? { ...project, status } : project
-      )
+    setProjects(prev =>
+      prev.map(p => (p.id === projectId ? { ...p, status } : p))
     );
   };
 
   const updateProject = (updatedProject: Project) => {
-    setProjects(prevProjects =>
-      prevProjects.map(project =>
-        project.id === updatedProject.id ? updatedProject : project
-      )
+    setProjects(prev =>
+      prev.map(p => (p.id === updatedProject.id ? updatedProject : p))
     );
   };
 
   const updateProjectDeadline = (projectId: number, endDate: string) => {
-    setProjects(prevProjects =>
-      prevProjects.map(project =>
-        project.id === projectId
-          ? { ...project, endDate, status: checkProjectStatus({ ...project, endDate }) }
-          : project
-      )
+    setProjects(prev =>
+      prev.map(p => (p.id === projectId ? { ...p, endDate } : p))
     );
   };
 
   const markProjectAsCompleted = (projectId: number) => {
-    setProjects(prevProjects =>
-      prevProjects.map(project =>
-        project.id === projectId ? { ...project, status: 'Terminé' } : project
-      )
+    setProjects(prev =>
+      prev.map(p => (p.id === projectId ? { ...p, status: 'Terminé' } : p))
     );
   };
 
   return (
-    <ProjectContext.Provider value={{ projects, updateProject, updateProjectStatus, updateProjectDeadline, markProjectAsCompleted }}>
+    <ProjectContext.Provider
+      value={{
+        projects,
+        updateProject,
+        updateProjectStatus,
+        updateProjectDeadline,
+        markProjectAsCompleted,
+      }}
+    >
       {children}
     </ProjectContext.Provider>
   );

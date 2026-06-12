@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useProjectContext } from "../contexts/ProjectContext";
 import Card from "../components/Card";
-import { getTasks } from "../api";
+import { getTasks, getProjects } from "../api";
 import type { Task } from "../data/mockData";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { projects } = useProjectContext();
+  const { projects: contextProjects } = useProjectContext();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const normalizeTask = (task: any): Task => ({
     id: task.id,
@@ -32,19 +32,22 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadData = async () => {
       setLoading(true);
-      setError(null);
       try {
-        const fetchedTasks = await getTasks();
+        const [fetchedTasks, fetchedProjects] = await Promise.all([
+          getTasks(),
+          getProjects(),
+        ]);
         setTasks(fetchedTasks.map(normalizeTask));
+        setProjects(fetchedProjects);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erreur lors du chargement des tâches.');
+        console.error('Erreur chargement dashboard:', err);
       } finally {
         setLoading(false);
       }
     };
-    loadTasks();
+    loadData();
   }, []);
 
   const getProjectName = (project: any) => project.title ?? project.name ?? 'Sans titre';
@@ -53,14 +56,13 @@ export default function Dashboard() {
   const completedTasks = tasks.filter(task => task.status === 'Terminé').length;
   const inProgressTasks = tasks.filter(task => task.status === 'En cours').length;
   const delayedTasks = tasks.filter(task => task.status === 'En retard').length;
-  const activeProjects = projects.filter(project => getProjectStatus(project) === 'En cours').length;
+  const activeProjects = projects.filter(p => getProjectStatus(p) === 'En cours').length;
   const openItems = tasks.filter(task => task.status !== 'Terminé').length;
   const technicalTasks = tasks.filter(task => task.assignee === user?.name);
-  const projectByManager = projects.filter(project => project.manager === user?.name);
-  const total = completedTasks + inProgressTasks + delayedTasks;
- const totalProjects = projects.length;
-const completedProjects = projects.filter(p => (p.status ?? p.title) === 'Terminé' || p.status === 'Terminé').length;
-const performance = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0;
+  const projectByManager = projects.filter(p => (p.owner_name ?? p.manager) === user?.name);
+  const totalProjects = projects.length;
+  const completedProjects = projects.filter(p => p.status === 'Terminé').length;
+  const performance = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0;
 
   return (
     <div className="w-full max-w-6xl mx-auto text-center">
@@ -83,7 +85,9 @@ const performance = totalProjects > 0 ? Math.round((completedProjects / totalPro
           <div className="bg-blue-600 p-6 rounded-3xl shadow-xl shadow-blue-950/20">
             <h3 className="text-lg font-semibold mb-4 text-white">État des projets</h3>
             <div className="space-y-2">
-              {projects.length === 0 ? (
+              {loading ? (
+                <p className="text-blue-200">Chargement...</p>
+              ) : projects.length === 0 ? (
                 <p className="text-blue-200">Aucun projet disponible.</p>
               ) : (
                 projects.map(project => (
@@ -140,7 +144,7 @@ const performance = totalProjects > 0 ? Math.round((completedProjects / totalPro
             <p className="text-blue-200 mb-4">Suivi de l'évolution des projets et de la performance de l'équipe technique.</p>
             <div className="space-y-4">
               <div>
-                <h4 className="font-semibold">Projets supervisés</h4>
+                <h4 className="font-semibold text-white">Projets supervisés</h4>
                 {projectByManager.length === 0 ? (
                   <p className="text-blue-300">Aucun projet attribué pour le moment.</p>
                 ) : (

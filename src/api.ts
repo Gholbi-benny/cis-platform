@@ -68,6 +68,16 @@ export type TaskComment = {
   task_id: number;
 };
 
+export type Notification = {
+  id: number;
+  user_id: number;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+};
+
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   const response = await request<LoginResponse>('/auth/login', {
     method: 'POST',
@@ -152,5 +162,19 @@ export const createComment = async (taskId: number, content: string): Promise<Ta
   return request<TaskComment>('/commentaires', {
     method: 'POST',
     body: JSON.stringify({ task_id: taskId, content }),
+  });
+};
+
+export const getNotifications = async (): Promise<Notification[]> => {
+  return request<Notification[]>('/notifications');
+};
+
+export const getUnreadCount = async (): Promise<{ unread: number }> => {
+  return request<{ unread: number }>('/notifications/unread/count');
+};
+
+export const markNotificationAsRead = async (id: number): Promise<Notification> => {
+  return request<Notification>(`/notifications/${id}/read`, {
+    method: 'PUT',
   });
 };
