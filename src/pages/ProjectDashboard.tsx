@@ -67,7 +67,8 @@ export default function ProjectDashboard() {
             <p className="text-blue-200 mt-2">{project.description}</p>
             <div className="mt-4 text-sm text-blue-200 space-y-1">
               <p><span className="text-white font-semibold">Chef de projet:</span> {project.owner_name ?? 'Non défini'}</p>
-              <p><span className="text-white font-semibold">Créé le:</span> {project.created_at?.slice(0, 10)}</p>
+              <p><span className="text-white font-semibold">Début:</span> {project.startDate ?? project.created_at?.slice(0, 10) ?? 'Non définie'}</p>
+              <p><span className="text-white font-semibold">Fin:</span> {project.endDate ?? project.end_date ?? 'Non définie'}</p>
             </div>
           </div>
           <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
@@ -82,7 +83,7 @@ export default function ProjectDashboard() {
       {/* Métriques */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total tâches', value: total, color: 'text-white' },
+          { label: 'Total étapes', value: total, color: 'text-white' },
           { label: 'Terminées', value: termines, color: 'text-emerald-300' },
           { label: 'En cours', value: enCours, color: 'text-sky-300' },
           { label: 'En retard', value: enRetard, color: 'text-rose-300' },
@@ -108,11 +109,11 @@ export default function ProjectDashboard() {
         </div>
       </div>
 
-      {/* Liste des tâches */}
+      {/* Liste des étapes */}
       <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Tâches du projet</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">Étapes du projet</h2>
         {tasks.length === 0 ? (
-          <div className="bg-blue-600 p-6 rounded-3xl text-blue-200">Aucune tâche pour ce projet.</div>
+          <div className="bg-blue-600 p-6 rounded-3xl text-blue-200">Aucune étape pour ce projet.</div>
         ) : (
           <div className="space-y-3">
             {tasks.map(task => (

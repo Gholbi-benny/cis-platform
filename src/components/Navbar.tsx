@@ -1,9 +1,44 @@
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useEffect, useState } from "react";
+import { getUnreadCount, getNotifications, markNotificationAsRead } from "../api";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [unread, setUnread] = useState<number>(0);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifs, setShowNotifs] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let mounted = true;
+    getUnreadCount().then(r => {
+      if (mounted) setUnread(r.unread ?? 0);
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, [user]);
+
+  const openNotifications = async () => {
+    if (!user) return;
+    try {
+      const notifs = await getNotifications();
+      setNotifications(notifs || []);
+      setShowNotifs(v => !v);
+      const unreadCount = notifs.filter((n: any) => !n.is_read).length;
+      setUnread(unreadCount);
+    } catch (e) {
+      console.error('Erreur chargement notifications', e);
+    }
+  };
+
+  const markAsRead = async (id: number) => {
+    try {
+      await markNotificationAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      setUnread(prev => Math.max(0, prev - 1));
+    } catch (e) { console.error(e); }
+  };
 
   return (
     <header className="border-b border-slate-200 bg-white/95 backdrop-blur-xl sticky top-0 z-20 shadow-lg dark:border-slate-700 dark:bg-slate-900/95">
@@ -32,6 +67,38 @@ export default function Navbar() {
                   </svg>
                 )}
               </button>
+              <div className="relative">
+                <button onClick={openNotifications} className="relative mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {unread > 0 && (
+                    <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">{unread}</span>
+                  )}
+                </button>
+                {showNotifs && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg shadow-lg p-3 z-50">
+                    <div className="text-sm font-semibold mb-2">Notifications</div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="text-xs text-slate-500">Aucune notification</div>
+                      ) : notifications.map(n => (
+                        <div key={n.id} className={`p-2 rounded-md ${n.is_read ? 'bg-slate-100 dark:bg-slate-700' : 'bg-blue-50 dark:bg-slate-900'}`}>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="text-sm font-medium">{n.title}</div>
+                              <div className="text-xs text-slate-500">{n.message}</div>
+                            </div>
+                            {!n.is_read && (
+                              <button onClick={() => markAsRead(n.id)} className="text-xs text-sky-600 ml-2">Marquer lu</button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="rounded-lg bg-slate-700/50 border border-slate-600 px-4 py-2 text-sm text-slate-300 font-medium dark:bg-slate-800/80 dark:border-slate-700 dark:text-slate-100">
                 {user.name}
               </div>

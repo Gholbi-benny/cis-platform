@@ -7,6 +7,7 @@ type ProjectItem = {
   id: number;
   title?: string;
   name?: string;
+  owner_id?: number;
 };
 
 export default function Tasks() {
@@ -46,6 +47,7 @@ export default function Tasks() {
       id: task.id,
       title: task.title,
       description: task.description,
+      startDate: task.start_date || task.startDate || task.created_at?.slice(0, 10) || '',
       status,
       assignee: task.assignee_name || task.assignee || 'Non assigné',
       projectId: task.project_id ?? task.projectId ?? 0,
@@ -78,6 +80,13 @@ export default function Tasks() {
     loadData();
   }, []);
 
+  const isProjectCoordinator = (projectId?: number | string) => {
+    if (!projectId) return false;
+    const pid = typeof projectId === 'string' ? parseInt(projectId) : projectId;
+    const p = projectsList.find(p => p.id === pid);
+    return !!(p && user && p.owner_id === user.id);
+  };
+
   const handleCreateTask = async () => {
     if (!newTitle.trim()) return;
     try {
@@ -98,7 +107,7 @@ export default function Tasks() {
       setNewDueDate('');
       loadData();
     } catch (err) {
-      console.error('Erreur création tâche:', err);
+      console.error('Erreur création étape:', err);
     }
   };
 
@@ -116,7 +125,7 @@ export default function Tasks() {
       setEditTask(null);
       loadData();
     } catch (err) {
-      console.error('Erreur modification tâche:', err);
+      console.error('Erreur modification étape:', err);
     }
   };
 
@@ -157,19 +166,19 @@ export default function Tasks() {
 
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="text-center md:text-left">
-            <h1 className="text-5xl font-bold text-white">Gestion des tâches</h1>
-            <p className="text-blue-200 mt-2">Suivi et priorisation des tâches opérationnelles.</p>
+            <h1 className="text-5xl font-bold text-white">Gestion des étapes</h1>
+            <p className="text-blue-200 mt-2">Suivi et priorisation des étapes opérationnelles.</p>
           </div>
           {canCreateTask && (
             <button onClick={() => setShowForm(true)} className="rounded-2xl bg-gray-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700">
-              Nouvelle tâche
+              Nouvelle étape
             </button>
           )}
         </div>
 
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-2xl text-sm font-medium ${filter === 'all' ? 'bg-gray-600 text-white' : 'bg-blue-900 text-blue-200'}`}>Toutes</button>
-          <button onClick={() => setFilter('my')} className={`px-4 py-2 rounded-2xl text-sm font-medium ${filter === 'my' ? 'bg-gray-600 text-white' : 'bg-blue-900 text-blue-200'}`}>Mes tâches</button>
+          <button onClick={() => setFilter('my')} className={`px-4 py-2 rounded-2xl text-sm font-medium ${filter === 'my' ? 'bg-gray-600 text-white' : 'bg-blue-900 text-blue-200'}`}>Mes étapes</button>
           <button onClick={() => setFilter('pending')} className={`px-4 py-2 rounded-2xl text-sm font-medium ${filter === 'pending' ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-300'}`}>En attente</button>
           <button onClick={() => setFilter('completed')} className={`px-4 py-2 rounded-2xl text-sm font-medium ${filter === 'completed' ? 'bg-sky-600 text-white' : 'bg-slate-800 text-slate-300'}`}>Terminées</button>
         </div>
@@ -178,13 +187,13 @@ export default function Tasks() {
           <div className="py-20">
             <div className="inline-flex items-center gap-3 rounded-3xl bg-slate-800 px-6 py-5 text-white shadow-lg">
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-              Chargement des tâches...
+              Chargement des étapes...
             </div>
           </div>
         ) : error ? (
           <div className="rounded-2xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-200">{error}</div>
         ) : filteredTasks.length === 0 ? (
-          <div className="rounded-2xl border border-blue-500/50 bg-blue-500/10 p-6 text-sm text-blue-100">Aucune tâche trouvée.</div>
+          <div className="rounded-2xl border border-blue-500/50 bg-blue-500/10 p-6 text-sm text-blue-100">Aucune étape trouvée.</div>
         ) : (
           <div className="space-y-4">
             {filteredTasks.map((task) => (
@@ -232,8 +241,9 @@ export default function Tasks() {
                   <div>
                     <h3 className="font-semibold">Détails</h3>
                     <p>Assigné à: {selectedTask.assignee}</p>
+                    <p>Début: {selectedTask.startDate || 'Non définie'}</p>
                     <p>Priorité: <span className={getPriorityColor(selectedTask.priority)}>{selectedTask.priority}</span></p>
-                    <p>Échéance: {selectedTask.dueDate}</p>
+                    <p>Échéance: {selectedTask.dueDate || 'Non définie'}</p>
                   </div>
                   <div>
                     <h3 className="font-semibold">Statut</h3>
@@ -271,7 +281,7 @@ export default function Tasks() {
         {editTask && (
           <div className="fixed inset-0 bg-blue-950/80 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-blue-600 border border-blue-500 rounded-3xl p-6 max-w-md w-full">
-              <h2 className="text-xl font-bold mb-4 text-white">Modifier la tâche</h2>
+              <h2 className="text-xl font-bold mb-4 text-white">Modifier l'étape</h2>
               <div className="space-y-4">
                 <input
                   type="text"
@@ -321,9 +331,9 @@ export default function Tasks() {
         {showForm && (
           <div className="fixed inset-0 bg-blue-950/80 flex items-center justify-center p-4 backdrop-blur-sm">
             <div className="bg-blue-600 border border-blue-500 rounded-3xl p-6 max-w-md w-full">
-              <h2 className="text-xl font-bold mb-4 text-white">Nouvelle tâche</h2>
+              <h2 className="text-xl font-bold mb-4 text-white">Nouvelle étape</h2>
               <div className="space-y-4">
-                <input type="text" placeholder="Titre de la tâche" value={newTitle} onChange={e => setNewTitle(e.target.value)} className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white" />
+                <input type="text" placeholder="Titre de l'étape" value={newTitle} onChange={e => setNewTitle(e.target.value)} className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white" />
                 <textarea placeholder="Description" value={newDescription} onChange={e => setNewDescription(e.target.value)} className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white h-24" />
                 <select value={newProjectId} onChange={e => setNewProjectId(e.target.value)} className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white">
                   <option value="">Sélectionner un projet</option>
@@ -331,10 +341,17 @@ export default function Tasks() {
                     <option key={p.id} value={p.id}>{p.title ?? p.name ?? p.id}</option>
                   ))}
                 </select>
-                <select value={newAssignee} onChange={e => setNewAssignee(e.target.value)} className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white">
-                  <option value="">Assigner à</option>
-                  {usersList.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                </select>
+                {isProjectCoordinator(newProjectId) ? (
+                  <select value={newAssignee} onChange={e => setNewAssignee(e.target.value)} className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white">
+                    <option value="">Assigner à</option>
+                    {usersList.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                  </select>
+                ) : (
+                  <select value={newAssignee} onChange={e => setNewAssignee(e.target.value)} className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white">
+                    <option value="">Assigner à</option>
+                    {usersList.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                  </select>
+                )}
                 <select value={newPriority} onChange={e => setNewPriority(e.target.value)} className="w-full rounded-2xl border border-gray-500 bg-gray-700 px-3 py-2 text-white">
                   <option value="Faible">Priorité: Faible</option>
                   <option value="Moyenne">Priorité: Moyenne</option>

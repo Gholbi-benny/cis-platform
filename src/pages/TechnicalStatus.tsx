@@ -27,6 +27,7 @@ export default function TechnicalStatus() {
         id: t.id,
         title: t.title,
         description: t.description ?? '',
+        startDate: t.start_date ?? t.startDate ?? t.created_at?.slice(0,10) ?? '',
         status: t.status ?? 'À faire',
         priority: t.priority ?? 'Faible',
         dueDate: t.due_date ?? '',
@@ -61,7 +62,7 @@ export default function TechnicalStatus() {
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div className="text-center md:text-left">
             <h1 className="text-5xl font-bold text-white">Statut technique</h1>
-            <p className="text-blue-200 mt-2">Suivi des tâches et projets qui vous sont attribués.</p>
+            <p className="text-blue-200 mt-2">Suivi des étapes et projets qui vous sont attribués.</p>
           </div>
         </div>
 
@@ -118,12 +119,12 @@ export default function TechnicalStatus() {
           )}
         </div>
 
-        {/* Tâches */}
+        {/* Étapes */}
         <div>
-          <h2 className="text-2xl font-semibold mb-4 text-white">Tâches assignées</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-white">Étapes assignées</h2>
           {technicalTasks.length === 0 ? (
             <div className="bg-blue-600 p-6 rounded-3xl shadow-xl shadow-blue-950/20">
-              <p className="text-blue-200">Aucune tâche assignée pour l'instant.</p>
+              <p className="text-blue-200">Aucune étape assignée pour l'instant.</p>
             </div>
           ) : (
             <div className="space-y-4">

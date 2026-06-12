@@ -7,7 +7,7 @@ export default function Sidebar() {
   const links = [
     { path: "/dashboard", label: "Dashboard", permission: "view_dashboard" },
     { path: "/projects", label: "Projets", permission: "view_projects" },
-    { path: "/tasks", label: "Tâches", permission: "view_tasks" },
+    { path: "/tasks", label: "Étapes", permission: "view_tasks" },
     { path: "/messages", label: "Messages clients", permission: "view_messages" },
     { path: "/technical-status", label: "Statut technique", permission: "update_tasks" },
   ];

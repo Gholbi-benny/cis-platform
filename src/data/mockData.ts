@@ -19,6 +19,7 @@ export type Task = {
   assignee: string;
   projectId: number;
   priority: 'Faible' | 'Moyenne' | 'Élevée';
+  startDate?: string;
   dueDate: string;
   comments: Comment[];
 };

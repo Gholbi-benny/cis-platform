@@ -16,6 +16,7 @@ export default function Dashboard() {
     id: task.id,
     title: task.title,
     description: task.description,
+    startDate: task.start_date || task.startDate || task.created_at?.slice(0,10) || '',
     status:
       task.status === 'Terminé' ? 'Terminé'
       : task.status === 'En cours' ? 'En cours'
@@ -76,9 +77,9 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card title="Projets actifs" value={activeProjects} />
-          <Card title="Tâches terminées" value={completedTasks} />
-          <Card title="Tâches en cours" value={inProgressTasks} />
-          <Card title="Tâches en retard" value={delayedTasks} />
+          <Card title="Étapes terminées" value={completedTasks} />
+          <Card title="Étapes en cours" value={inProgressTasks} />
+          <Card title="Étapes en retard" value={delayedTasks} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -131,7 +132,7 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-white">{activeProjects}</p>
               </div>
               <div className="bg-slate-700/50 border border-slate-600 p-4 rounded-lg">
-                <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Tâches ouvertes</div>
+                <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Étapes ouvertes</div>
                 <p className="text-3xl font-bold text-white">{openItems}</p>
               </div>
             </div>
@@ -157,7 +158,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h4 className="font-semibold text-white">Statut de l'équipe technique</h4>
-                <p className="text-blue-200">{inProgressTasks} tâches en cours, {delayedTasks} tâches en retard.</p>
+                <p className="text-blue-200">{inProgressTasks} étapes en cours, {delayedTasks} étapes en retard.</p>
               </div>
             </div>
           </div>
@@ -166,9 +167,9 @@ export default function Dashboard() {
         {user?.role === 'Équipe technique' && (
           <div className="bg-blue-600 p-6 rounded-3xl shadow-xl shadow-blue-950/20">
             <h3 className="text-lg font-semibold mb-4 text-white">Vue Équipe technique</h3>
-            <p className="text-blue-200 mb-4">Rapport de vos tâches en cours et statut projet.</p>
+            <p className="text-blue-200 mb-4">Rapport de vos étapes en cours et statut projet.</p>
             {technicalTasks.length === 0 ? (
-              <p className="text-blue-300">Aucune tâche assignée pour le moment.</p>
+              <p className="text-blue-300">Aucune étape assignée pour le moment.</p>
             ) : (
               <div className="space-y-3">
                 {technicalTasks.map(task => (
@@ -189,7 +190,7 @@ export default function Dashboard() {
             <p className="text-blue-200 mb-4">Suivi des demandes clients et préparation des rendez-vous.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-blue-950 p-4 rounded-3xl border border-blue-800">
-                <h4 className="font-semibold text-white">Tâches ouvertes</h4>
+                <h4 className="font-semibold text-white">Étapes ouvertes</h4>
                 <p className="text-3xl font-bold text-white">{openItems}</p>
               </div>
               <div className="bg-blue-900 p-4 rounded-3xl border border-blue-700">
@@ -201,9 +202,9 @@ export default function Dashboard() {
         )}
 
         <div className="bg-blue-600 p-6 rounded-3xl shadow-xl shadow-blue-950/20">
-          <h3 className="text-lg font-semibold mb-4 text-white">Tâches récentes</h3>
+          <h3 className="text-lg font-semibold mb-4 text-white">Étapes récentes</h3>
           {tasks.length === 0 ? (
-            <p className="text-blue-200">Aucune tâche disponible.</p>
+            <p className="text-blue-200">Aucune étape disponible.</p>
           ) : (
             <div className="space-y-3">
               {tasks.slice(0, 5).map(task => (
