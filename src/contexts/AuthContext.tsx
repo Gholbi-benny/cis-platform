@@ -28,10 +28,28 @@ type AuthProviderProps = {
 };
 
 const rolePermissions: Record<Role, string[]> = {
- Directeur: ['view_dashboard', 'view_projects', 'view_tasks', 'view_messages', 'manage_projects', 'assign_tasks', 'manage_users', 'send_messages', 'update_tasks', 'manage_requests', 'write'],
-  'Chef de projet': ['view_dashboard', 'view_projects', 'view_tasks', 'manage_projects', 'assign_tasks'],
-  'Équipe technique': ['view_tasks', 'update_tasks'],
-  Commercial: ['view_messages', 'send_messages', 'manage_requests'],
+  'Directeur général': [
+    'view_dashboard', 'view_projects', 'view_tasks', 'view_messages',
+    'manage_projects', 'manage_users', 'send_messages', 'manage_requests',
+  ],
+  'Directeur général adjoint': [
+    'view_dashboard', 'view_projects', 'view_tasks', 'view_messages',
+    'manage_projects', 'manage_users', 'send_messages', 'manage_requests',
+  ],
+  'Directeur technique': [
+    'view_dashboard', 'view_projects', 'view_tasks',
+    'manage_projects', 'assign_tasks', 'write', 'update_tasks',
+  ],
+  'Coordinateur de projet': [
+    'view_dashboard', 'view_projects', 'view_tasks',
+    'manage_projects', 'assign_tasks', 'write', 'update_tasks',
+  ],
+  'Équipe technique': [
+    'view_tasks', 'update_tasks',
+  ],
+  'Directeur commercial': [
+    'view_messages', 'send_messages', 'manage_requests', 'view_dashboard',
+  ],
 };
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
@@ -63,14 +81,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) return;
     const trimmed = name.trim();
     if (!trimmed) return;
-
     const updatedUser = await updateUser({ id: user.id, name: trimmed });
     persistSessionUser(updatedUser);
   };
 
   const updatePassword = async (newPassword: string) => {
     if (!user) return;
-
     const updatedUser = await updateUser({ id: user.id, password: newPassword });
     persistSessionUser(updatedUser);
   };
@@ -88,10 +104,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   React.useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-
     const savedUser = localStorage.getItem('user');
     if (!savedUser) return;
-
     try {
       setUser(JSON.parse(savedUser) as User);
     } catch {
@@ -101,17 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        hasPermission,
-        hasRole,
-        updateDisplayName,
-        updatePassword,
-      }}
-    >
+    <AuthContext.Provider value={{ user, login, logout, hasPermission, hasRole, updateDisplayName, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

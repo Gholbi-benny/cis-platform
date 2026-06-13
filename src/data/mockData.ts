@@ -24,7 +24,7 @@ export type Task = {
   comments: Comment[];
 };
 
-export type Role = 'Directeur' | 'Chef de projet' | 'Équipe technique' | 'Commercial';
+export type Role = 'Directeur général' | 'Directeur général adjoint' | 'Coordinateur de projet' | 'Équipe technique' | 'Directeur commercial' | 'Directeur technique';
 
 export type User = {
   id: number;
@@ -34,14 +34,13 @@ export type User = {
   avatar?: string;
 };
 
-/** Comptes avec mot de passe initial (démo). Pour l’auth, utiliser `userAccounts` dans AuthContext. */
 export type UserAccount = User & { password: string };
 
 export const userAccounts: UserAccount[] = [
-  { id: 1, name: 'El_Lee-Segnor', email: 'el_lee-segnor@ciscongo.com', role: 'Directeur', password: 'demo123' },
-  { id: 2, name: 'Gholbi Moannaka', email: 'gholbi@ciscongo.com', role: 'Chef de projet', password: 'demo123' },
+  { id: 1, name: 'El_Lee-Segnor', email: 'el_lee-segnor@ciscongo.com', role: 'Directeur général', password: 'demo123' },
+  { id: 2, name: 'Gholbi Moannaka', email: 'gholbi@ciscongo.com', role: 'Coordinateur de projet', password: 'demo123' },
   { id: 3, name: 'Gloire Guioro', email: 'gloire@ciscongo.com', role: 'Équipe technique', password: 'demo123' },
-  { id: 4, name: 'Chalbery Malonga', email: 'chalbery@ciscongo.com', role: 'Commercial', password: 'demo123' },
+  { id: 4, name: 'Chalbery Malonga', email: 'chalbery@ciscongo.com', role: 'Directeur commercial', password: 'demo123' },
 ];
 
 export const users: User[] = userAccounts.map(({ password: _password, ...u }) => u);
@@ -83,8 +82,6 @@ export type DashboardData = {
   activeProjects: number;
   completedTasks: number;
 };
-
-
 
 export const dashboardData: DashboardData = {
   projects: 5,
