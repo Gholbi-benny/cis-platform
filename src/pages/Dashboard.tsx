@@ -65,12 +65,14 @@ export default function Dashboard() {
   const completedProjects = projects.filter(p => p.status === 'Terminé').length;
   const performance = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0;
 
+  const roles = ['Directeur général', 'Directeur général adjoint', 'Directeur technique'];
+
   return (
     <div className="w-full max-w-6xl mx-auto text-center">
       <div className="space-y-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <h1 className="text-5xl font-bold text-white text-center md:text-left">Tableau de bord</h1>
-          <div className="text-sm text-blue-200">
+          <h1 className="text-5xl font-bold text-slate-900 dark:text-white text-center md:text-left">Tableau de bord</h1>
+          <div className="text-sm text-slate-600 dark:text-blue-200">
             Bienvenue, {user?.name} ({user?.role})
           </div>
         </div>
@@ -93,7 +95,7 @@ export default function Dashboard() {
               ) : (
                 projects.map(project => (
                   <div key={project.id} className="flex justify-between items-center">
-                    <span className="text-sm text-blue-200">{getProjectName(project)}</span>
+                    <span className="text-sm text-blue-100">{getProjectName(project)}</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                       getProjectStatus(project) === 'Terminé' ? 'bg-emerald-600/15 text-emerald-300 border border-emerald-500/30' :
                       getProjectStatus(project) === 'En cours' ? 'bg-sky-600/15 text-sky-300 border border-sky-500/30' :
@@ -107,49 +109,49 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg shadow-xl shadow-slate-950/50 border border-slate-700">
-            <h3 className="text-lg font-semibold mb-4 text-white">Performance globale</h3>
+          <div className="bg-slate-100 dark:bg-gradient-to-br dark:from-slate-800 dark:to-slate-900 p-6 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700">
+            <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">Performance globale</h3>
             <div className="text-center">
-              <div className="text-5xl font-bold text-blue-400 mb-2">{performance}%</div>
-              <div className="text-sm text-slate-400 uppercase tracking-wide font-semibold mb-4">Taux de réussite</div>
+              <div className="text-5xl font-bold text-blue-600 dark:text-blue-400 mb-2">{performance}%</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wide font-semibold mb-4">Taux de réussite</div>
               <div className="mt-4 flex gap-2 items-center">
-                <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
+                <div className="flex-1 bg-slate-300 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" style={{ width: `${performance}%` }}></div>
                 </div>
-                <span className="text-sm font-semibold text-slate-300">{performance}%</span>
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{performance}%</span>
               </div>
             </div>
           </div>
         </div>
 
-        {user?.role === 'Directeur' && (
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-lg shadow-xl shadow-slate-950/50 border border-slate-700">
-            <h3 className="text-lg font-semibold mb-2 text-white">Vue Directeur</h3>
-            <p className="text-sm text-slate-400 mb-4">Accès complet à toutes les informations de la plateforme.</p>
+        {roles.includes(user?.role ?? '') && (
+          <div className="bg-slate-100 dark:bg-gradient-to-br dark:from-slate-800 dark:to-slate-900 p-6 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700">
+            <h3 className="text-lg font-semibold mb-2 text-slate-900 dark:text-white">Vue Direction</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Accès complet à toutes les informations de la plateforme.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-slate-700/50 border border-slate-600 p-4 rounded-lg">
-                <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Projets en cours</div>
-                <p className="text-3xl font-bold text-white">{activeProjects}</p>
+              <div className="bg-white dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 p-4 rounded-xl">
+                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-2">Projets en cours</div>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white">{activeProjects}</p>
               </div>
-              <div className="bg-slate-700/50 border border-slate-600 p-4 rounded-lg">
-                <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Étapes ouvertes</div>
-                <p className="text-3xl font-bold text-white">{openItems}</p>
+              <div className="bg-white dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 p-4 rounded-xl">
+                <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-2">Étapes ouvertes</div>
+                <p className="text-3xl font-bold text-slate-900 dark:text-white">{openItems}</p>
               </div>
             </div>
           </div>
         )}
 
-        {user?.role === 'Chef de projet' && (
-          <div className="bg-slate-900 p-6 rounded-3xl shadow-xl shadow-slate-950/20">
-            <h3 className="text-lg font-semibold mb-4 text-white">Vue Chef de projet</h3>
-            <p className="text-blue-200 mb-4">Suivi de l'évolution des projets et de la performance de l'équipe technique.</p>
+        {user?.role === 'Coordinateur de projet' && (
+          <div className="bg-slate-100 dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700">
+            <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">Vue Coordinateur de projet</h3>
+            <p className="text-slate-600 dark:text-blue-200 mb-4">Suivi de l'évolution des projets et de la performance de l'équipe technique.</p>
             <div className="space-y-4">
               <div>
-                <h4 className="font-semibold text-white">Projets supervisés</h4>
+                <h4 className="font-semibold text-slate-900 dark:text-white">Projets supervisés</h4>
                 {projectByManager.length === 0 ? (
-                  <p className="text-blue-300">Aucun projet attribué pour le moment.</p>
+                  <p className="text-slate-500 dark:text-blue-300">Aucun projet attribué pour le moment.</p>
                 ) : (
-                  <ul className="list-disc ml-5 text-blue-200">
+                  <ul className="list-disc ml-5 text-slate-700 dark:text-blue-200">
                     {projectByManager.map(project => (
                       <li key={project.id}>{getProjectName(project)} - {getProjectStatus(project)}</li>
                     ))}
@@ -157,8 +159,8 @@ export default function Dashboard() {
                 )}
               </div>
               <div>
-                <h4 className="font-semibold text-white">Statut de l'équipe technique</h4>
-                <p className="text-blue-200">{inProgressTasks} étapes en cours, {delayedTasks} étapes en retard.</p>
+                <h4 className="font-semibold text-slate-900 dark:text-white">Statut de l'équipe technique</h4>
+                <p className="text-slate-600 dark:text-blue-200">{inProgressTasks} étapes en cours, {delayedTasks} étapes en retard.</p>
               </div>
             </div>
           </div>
@@ -184,9 +186,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        {user?.role === 'Commercial' && (
+        {user?.role === 'Directeur commercial' && (
           <div className="bg-blue-600 p-6 rounded-3xl shadow-xl shadow-blue-950/20">
-            <h3 className="text-lg font-semibold mb-4 text-white">Vue Commercial</h3>
+            <h3 className="text-lg font-semibold mb-4 text-white">Vue Directeur commercial</h3>
             <p className="text-blue-200 mb-4">Suivi des demandes clients et préparation des rendez-vous.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-blue-950 p-4 rounded-3xl border border-blue-800">
