@@ -1,11 +1,13 @@
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getUnreadCount, getNotifications, markNotificationAsRead } from "../api";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
   const [unread, setUnread] = useState<number>(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
@@ -17,6 +19,14 @@ export default function Navbar() {
       if (mounted) setUnread(r.unread ?? 0);
     }).catch(() => {});
     return () => { mounted = false; };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      getUnreadCount().then(r => setUnread(r.unread ?? 0)).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const openNotifications = async () => {
@@ -32,12 +42,18 @@ export default function Navbar() {
     }
   };
 
-  const markAsRead = async (id: number) => {
-    try {
-      await markNotificationAsRead(id);
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+  const handleNotificationClick = async (notif: any) => {
+    if (!notif.is_read) {
+      await markNotificationAsRead(notif.id);
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
       setUnread(prev => Math.max(0, prev - 1));
-    } catch (e) { console.error(e); }
+    }
+    setShowNotifs(false);
+    if (notif.task_id) {
+      navigate('/tasks', { state: { openTaskId: notif.task_id } });
+    } else if (notif.project_id) {
+      navigate(`/projects/${notif.project_id}`);
+    }
   };
 
   return (
@@ -83,14 +99,24 @@ export default function Navbar() {
                       {notifications.length === 0 ? (
                         <div className="text-xs text-slate-500">Aucune notification</div>
                       ) : notifications.map(n => (
-                        <div key={n.id} className={`p-2 rounded-md ${n.is_read ? 'bg-slate-100 dark:bg-slate-700' : 'bg-blue-50 dark:bg-slate-900'}`}>
+                        <div
+                          key={n.id}
+                          onClick={() => handleNotificationClick(n)}
+                          className={`p-2 rounded-md cursor-pointer transition hover:bg-blue-100 dark:hover:bg-slate-600 ${n.is_read ? 'bg-slate-100 dark:bg-slate-700' : 'bg-blue-50 dark:bg-slate-900'}`}
+                        >
                           <div className="flex justify-between items-start">
                             <div>
                               <div className="text-sm font-medium text-slate-900 dark:text-white">{n.title}</div>
                               <div className="text-xs text-slate-500 dark:text-slate-400">{n.message}</div>
+                              {n.task_id && (
+                                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">Cliquer pour voir l'étape →</div>
+                              )}
+                              {n.project_id && !n.task_id && (
+                                <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">Cliquer pour voir le projet →</div>
+                              )}
                             </div>
                             {!n.is_read && (
-                              <button onClick={() => markAsRead(n.id)} className="text-xs text-sky-600 ml-2">Marquer lu</button>
+                              <span className="ml-2 mt-1 h-2 w-2 rounded-full bg-blue-500 shrink-0"></span>
                             )}
                           </div>
                         </div>
@@ -102,7 +128,7 @@ export default function Navbar() {
               <div className="rounded-lg bg-slate-100 border border-slate-300 px-4 py-2 text-sm text-slate-800 font-medium dark:bg-slate-800/80 dark:border-slate-700 dark:text-slate-100">
                 {user.name}
               </div>
-              <span className="text-slate-400 dark:text-slate-400">·</span>
+              <span className="text-slate-400">·</span>
               <span className="text-xs text-slate-600 dark:text-slate-300 uppercase font-semibold tracking-wide">{user.role}</span>
               <button
                 onClick={logout}

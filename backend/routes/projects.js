@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 
-// GET /projects - tous les projets
+// GET /projects
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(`
@@ -18,7 +18,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// GET /projects/:id - un projet + ses tâches
+// GET /projects/:id
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const project = await pool.query('SELECT p.*, u.name as owner_name FROM projects p LEFT JOIN users u ON p.owner_id = u.id WHERE p.id = $1', [req.params.id]);
@@ -37,7 +37,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /projects - créer un projet
+// POST /projects
 router.post('/', authMiddleware, async (req, res) => {
   const { title, description, status } = req.body;
   if (!title) return res.status(400).json({ error: 'Titre requis' });
@@ -47,21 +47,69 @@ router.post('/', authMiddleware, async (req, res) => {
       'INSERT INTO projects (title, description, owner_id, status) VALUES ($1, $2, $3, $4) RETURNING *',
       [title, description, req.user.id, status || 'En cours']
     );
-    res.status(201).json(result.rows[0]);
+
+    const createdProject = result.rows[0];
+
+    // Si le projet est soumis par le Directeur commercial, notifier le Directeur technique
+    if (status === 'En attente de validation') {
+      try {
+        const techDirectors = await pool.query("SELECT id FROM users WHERE role = 'Directeur technique'");
+        const senderName = req.user.name || 'Le Directeur commercial';
+
+        for (const dt of techDirectors.rows) {
+          await pool.query(
+            'INSERT INTO notifications (user_id, type, title, message, project_id) VALUES ($1, $2, $3, $4, $5)',
+            [
+              dt.id,
+              'project_submission',
+              'Nouveau projet soumis',
+              `${senderName} a soumis le projet "${title}" pour validation`,
+              createdProject.id
+            ]
+          );
+        }
+      } catch (e) { console.error('Erreur notification soumission:', e.message || e); }
+    }
+
+    res.status(201).json(createdProject);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// PUT /projects/:id - modifier un projet
+// PUT /projects/:id
 router.put('/:id', authMiddleware, async (req, res) => {
-  const { title, description, status } = req.body;
+  const { title, description, status, owner_id } = req.body;
   try {
+    const existing = await pool.query('SELECT owner_id, title FROM projects WHERE id = $1', [req.params.id]);
+    const prevOwnerId = existing.rows[0]?.owner_id;
+    const projectTitle = title || existing.rows[0]?.title || '';
+
     const result = await pool.query(
-      'UPDATE projects SET title=$1, description=$2, status=$3 WHERE id=$4 RETURNING *',
-      [title, description, status || 'En cours', req.params.id]
+      'UPDATE projects SET title=$1, description=$2, status=$3, owner_id=COALESCE($4, owner_id) WHERE id=$5 RETURNING *',
+      [title, description, status || 'En cours', owner_id || null, req.params.id]
     );
-    res.json(result.rows[0]);
+
+    const updated = result.rows[0];
+
+    if (updated) {
+      const ownerResult = await pool.query('SELECT name FROM users WHERE id = $1', [updated.owner_id]);
+      updated.owner_name = ownerResult.rows[0]?.name ?? 'Inconnu';
+    }
+
+    if (owner_id && owner_id !== prevOwnerId) {
+      try {
+        const senderName = req.user.name || 'La direction';
+        const notifTitle = 'Nouveau projet assigné';
+        const notifMessage = `${senderName} vous a assigné le projet "${projectTitle}"`;
+        await pool.query(
+          'INSERT INTO notifications (user_id, type, title, message, project_id) VALUES ($1, $2, $3, $4, $5)',
+          [owner_id, 'project_assignment', notifTitle, notifMessage, parseInt(req.params.id)]
+        );
+      } catch (e) { console.error('Erreur création notification projet:', e.message || e); }
+    }
+
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

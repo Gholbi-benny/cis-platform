@@ -38,7 +38,7 @@ const rolePermissions: Record<Role, string[]> = {
   ],
   'Directeur technique': [
     'view_dashboard', 'view_projects', 'view_tasks',
-    'manage_projects', 'assign_tasks', 'write', 'update_tasks',
+    'manage_projects', 'assign_tasks', 'write', 'update_tasks', 'validate_projects',
   ],
   'Coordinateur de projet': [
     'view_dashboard', 'view_projects', 'view_tasks',
@@ -48,7 +48,8 @@ const rolePermissions: Record<Role, string[]> = {
     'view_tasks', 'update_tasks',
   ],
   'Directeur commercial': [
-    'view_messages', 'send_messages', 'manage_requests', 'view_dashboard',
+    'view_dashboard', 'view_projects', 'view_messages',
+    'manage_projects', 'send_messages', 'manage_requests', 'create_projects',
   ],
 };
 

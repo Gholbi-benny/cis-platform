@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import type { Task, User } from "../data/mockData";
 import { useAuth } from "../contexts/AuthContext";
 import { getTasks, getUsers, getProjects, createTask, updateTask } from "../api";
@@ -12,6 +13,7 @@ type ProjectItem = {
 
 export default function Tasks() {
   const { hasPermission, user } = useAuth();
+  const location = useLocation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [usersList, setUsersList] = useState<User[]>([]);
   const [projectsList, setProjectsList] = useState<ProjectItem[]>([]);
@@ -79,6 +81,14 @@ export default function Tasks() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const openTaskId = (location.state as any)?.openTaskId;
+    if (openTaskId && tasks.length > 0) {
+      const task = tasks.find(t => t.id === openTaskId);
+      if (task) setSelectedTask(task);
+    }
+  }, [location.state, tasks]);
 
   const isProjectCoordinator = (projectId?: number | string) => {
     if (!projectId) return false;
@@ -180,7 +190,9 @@ export default function Tasks() {
 
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>Toutes</button>
-          <button onClick={() => setFilter('my')} className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${filter === 'my' ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>Mes étapes</button>
+          {user?.role === 'Équipe technique' && (
+            <button onClick={() => setFilter('my')} className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${filter === 'my' ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>Mes étapes</button>
+          )}
           <button onClick={() => setFilter('pending')} className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${filter === 'pending' ? 'bg-sky-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>En attente</button>
           <button onClick={() => setFilter('completed')} className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${filter === 'completed' ? 'bg-sky-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>Terminées</button>
         </div>
