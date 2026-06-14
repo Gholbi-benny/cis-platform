@@ -79,8 +79,20 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     setProjects(prev => prev.map(p => (p.id === updatedProject.id ? updatedProject : p)));
   };
 
-  const updateProjectDeadline = (projectId: number, endDate: string) => {
-    setProjects(prev => prev.map(p => (p.id === projectId ? { ...p, endDate } : p)));
+  const updateProjectDeadline = async (projectId: number, endDate: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    try {
+      await updateProjectApi({
+        id: projectId,
+        title: project.name,
+        description: project.description,
+        status: project.status,
+      });
+      setProjects(prev => prev.map(p => (p.id === projectId ? { ...p, endDate } : p)));
+    } catch (err) {
+      console.error('Erreur mise à jour échéance projet:', err);
+    }
   };
 
   const markProjectAsCompleted = async (projectId: number) => {

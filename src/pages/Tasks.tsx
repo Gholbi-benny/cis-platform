@@ -90,13 +90,6 @@ export default function Tasks() {
     }
   }, [location.state, tasks]);
 
-  const isProjectCoordinator = (projectId?: number | string) => {
-    if (!projectId) return false;
-    const pid = typeof projectId === 'string' ? parseInt(projectId) : projectId;
-    const p = projectsList.find(p => p.id === pid);
-    return !!(p && user && p.owner_id === user.id);
-  };
-
   const handleCreateTask = async () => {
     if (!newTitle.trim()) return;
     try {
@@ -169,6 +162,8 @@ export default function Tasks() {
     const p = projectsList.find(p => p.id === projectId);
     return p ? (p.title ?? p.name ?? projectId) : projectId;
   };
+
+  const technicalUsers = usersList.filter(u => u.role === 'Équipe technique');
 
   const inputClass = "w-full rounded-2xl border border-slate-300 dark:border-gray-500 bg-slate-50 dark:bg-gray-700 px-3 py-2 text-slate-900 dark:text-white";
 
@@ -307,7 +302,7 @@ export default function Tasks() {
                 </select>
                 <select value={editTask.assignee} onChange={e => setEditTask({ ...editTask, assignee: e.target.value })} className={inputClass}>
                   <option value="">Assigner à</option>
-                  {usersList.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                  {technicalUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                 </select>
                 <input type="date" value={editTask.dueDate} onChange={e => setEditTask({ ...editTask, dueDate: e.target.value })} className={inputClass} />
               </div>
@@ -335,7 +330,7 @@ export default function Tasks() {
                 </select>
                 <select value={newAssignee} onChange={e => setNewAssignee(e.target.value)} className={inputClass}>
                   <option value="">Assigner à</option>
-                  {usersList.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                  {technicalUsers.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                 </select>
                 <select value={newPriority} onChange={e => setNewPriority(e.target.value)} className={inputClass}>
                   <option value="Faible">Priorité: Faible</option>

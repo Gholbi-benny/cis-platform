@@ -50,7 +50,6 @@ router.post('/', authMiddleware, async (req, res) => {
 
     const createdProject = result.rows[0];
 
-    // Si le projet est soumis par le Directeur commercial, notifier le Directeur technique
     if (status === 'En attente de validation') {
       try {
         const techDirectors = await pool.query("SELECT id FROM users WHERE role = 'Directeur technique'");
@@ -79,15 +78,15 @@ router.post('/', authMiddleware, async (req, res) => {
 
 // PUT /projects/:id
 router.put('/:id', authMiddleware, async (req, res) => {
-  const { title, description, status, owner_id } = req.body;
+  const { title, description, status, owner_id, end_date } = req.body;
   try {
     const existing = await pool.query('SELECT owner_id, title FROM projects WHERE id = $1', [req.params.id]);
     const prevOwnerId = existing.rows[0]?.owner_id;
     const projectTitle = title || existing.rows[0]?.title || '';
 
     const result = await pool.query(
-      'UPDATE projects SET title=$1, description=$2, status=$3, owner_id=COALESCE($4, owner_id) WHERE id=$5 RETURNING *',
-      [title, description, status || 'En cours', owner_id || null, req.params.id]
+      'UPDATE projects SET title=$1, description=$2, status=$3, owner_id=COALESCE($4, owner_id), end_date=COALESCE($5, end_date) WHERE id=$6 RETURNING *',
+      [title, description, status || 'En cours', owner_id || null, end_date || null, req.params.id]
     );
 
     const updated = result.rows[0];

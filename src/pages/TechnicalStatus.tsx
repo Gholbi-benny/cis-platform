@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useProjectContext } from "../contexts/ProjectContext";
 import { getTasks, getProjects, updateTask, updateProject } from "../api";
 
 type Task = {
@@ -18,7 +17,6 @@ type Task = {
 
 export default function TechnicalStatus() {
   const { user } = useAuth();
-  const { updateProjectDeadline } = useProjectContext();
   const [technicalTasks, setTechnicalTasks] = useState<Task[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [localProjects, setLocalProjects] = useState<any[]>([]);
@@ -72,7 +70,38 @@ export default function TechnicalStatus() {
   };
 
   const handleDeadlineChange = (projectId: number, date: string) => {
+    console.log('Date changée:', projectId, date);
     setDeadlineEdits(prev => ({ ...prev, [projectId]: date }));
+  };
+
+  const handleDeadlineSave = async (projectId: number) => {
+    console.log('Clic sauvegarder, projectId:', projectId);
+    console.log('deadlineEdits:', deadlineEdits);
+    const newDeadline = deadlineEdits[projectId];
+    console.log('newDeadline:', newDeadline);
+    if (!newDeadline) {
+      alert('Veuillez sélectionner une date d\'abord');
+      return;
+    }
+    const project = localProjects.find((p: any) => p.id === projectId);
+    console.log('project trouvé:', project);
+    if (!project) return;
+    try {
+      console.log('Envoi API...');
+      await updateProject({
+        id: projectId,
+        title: project.title ?? project.name,
+        description: project.description,
+        status: project.status ?? 'En cours',
+        end_date: newDeadline,
+      });
+      console.log('API OK');
+      setLocalProjects(prev => prev.map(p => p.id === projectId ? { ...p, end_date: newDeadline } : p));
+      alert('Échéance sauvegardée !');
+    } catch (err) {
+      console.error('Erreur:', err);
+      alert('Erreur lors de la sauvegarde');
+    }
   };
 
   const handleTaskStatusUpdate = async (id: number, status: string) => {
@@ -90,11 +119,6 @@ export default function TechnicalStatus() {
     } catch (err) {
       console.error('Erreur mise à jour statut:', err);
     }
-  };
-
-  const handleDeadlineSave = (projectId: number) => {
-    const newDeadline = deadlineEdits[projectId];
-    if (newDeadline) updateProjectDeadline(projectId, newDeadline);
   };
 
   const myProjectIds = new Set(technicalTasks.map(t => t.projectId));
@@ -138,7 +162,7 @@ export default function TechnicalStatus() {
                       <h3 className="text-xl font-semibold text-white">{project.title ?? project.name}</h3>
                       <p className="text-blue-100 mt-2">{project.description}</p>
                       <div className="mt-3 text-sm text-blue-100">
-                        Coordinateur: {project.owner_name ?? 'Non défini'} • Statut: {project.status ?? 'En cours'}
+                        Coordinateur: {project.owner_name ?? 'Non défini'} • Statut: {project.status ?? 'En cours'} • Échéance: {project.end_date ?? 'Non définie'}
                       </div>
                     </div>
                     <span className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(project.status ?? 'En cours')}`}>
@@ -150,11 +174,18 @@ export default function TechnicalStatus() {
                       <div className="flex flex-col md:flex-row md:items-center gap-3">
                         <input
                           type="date"
-                          value={deadlineEdits[project.id] ?? project.endDate ?? ''}
+                          value={deadlineEdits[project.id] ?? project.end_date ?? ''}
                           onChange={(e) => handleDeadlineChange(project.id, e.target.value)}
                           className={inputClass}
                         />
-                        <button onClick={() => handleDeadlineSave(project.id)} className="rounded-2xl bg-white/20 hover:bg-white/30 px-4 py-2 text-sm font-semibold text-white transition">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            console.log('Bouton cliqué pour projet:', project.id);
+                            handleDeadlineSave(project.id);
+                          }}
+                          className="rounded-2xl bg-emerald-500 hover:bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition"
+                        >
                           Sauvegarder
                         </button>
                       </div>

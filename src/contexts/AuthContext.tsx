@@ -30,15 +30,15 @@ type AuthProviderProps = {
 const rolePermissions: Record<Role, string[]> = {
   'Directeur général': [
     'view_dashboard', 'view_projects', 'view_tasks', 'view_messages',
-    'manage_projects', 'manage_users', 'send_messages', 'manage_requests',
+    'manage_users',
   ],
   'Directeur général adjoint': [
     'view_dashboard', 'view_projects', 'view_tasks', 'view_messages',
-    'manage_projects', 'manage_users', 'send_messages', 'manage_requests',
+    'manage_users',
   ],
   'Directeur technique': [
     'view_dashboard', 'view_projects', 'view_tasks',
-    'manage_projects', 'assign_tasks', 'write', 'update_tasks', 'validate_projects',
+    'validate_projects', 'manage_projects',
   ],
   'Coordinateur de projet': [
     'view_dashboard', 'view_projects', 'view_tasks',
@@ -48,8 +48,8 @@ const rolePermissions: Record<Role, string[]> = {
     'view_tasks', 'update_tasks',
   ],
   'Directeur commercial': [
-    'view_dashboard', 'view_projects', 'view_messages',
-    'manage_projects', 'send_messages', 'manage_requests', 'create_projects',
+    'view_dashboard', 'view_messages',
+    'send_messages', 'manage_requests', 'create_projects', 'view_projects',
   ],
 };
 

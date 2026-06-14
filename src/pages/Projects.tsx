@@ -33,11 +33,12 @@ export default function Projects() {
   const [newProjectEndDate, setNewProjectEndDate] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const canCreateProject = hasPermission('manage_projects') || hasPermission('create_projects');
-  const canValidate = hasPermission('validate_projects');
   const isCommercial = user?.role === 'Directeur commercial';
   const isTechnique = user?.role === 'Directeur technique';
   const isCoordinateur = user?.role === 'Coordinateur de projet';
+  const canCreate = isCommercial;
+  const canModify = isCoordinateur || isTechnique;
+  const canValidate = isTechnique;
 
   const normalizeProject = (p: any): Project => ({
     id: p.id,
@@ -82,11 +83,10 @@ export default function Projects() {
       return;
     }
     try {
-      const status = isCommercial ? 'En attente de validation' : 'En cours';
       const createdProject = await createProject({
         title: newProjectName.trim(),
         description: newProjectDescription.trim(),
-        status,
+        status: 'En attente de validation',
       });
       setProjects((current) => [normalizeProject(createdProject), ...current]);
       setShowForm(false);
@@ -130,7 +130,6 @@ export default function Projects() {
     }
   };
 
-  // Filtrer les projets selon le rôle
   const getFilteredProjects = () => {
     if (isCommercial) {
       return projects.filter(p => p.owner_id === user?.id);
@@ -161,15 +160,15 @@ export default function Projects() {
             <h1 className="text-5xl font-bold text-slate-900 dark:text-white">Gestion des projets</h1>
             <p className="text-slate-600 dark:text-blue-200 mt-2">Vision synthétique des projets et détails métiers.</p>
           </div>
-          {canCreateProject && (
+          {canCreate && (
             <button onClick={() => setShowForm(true)} className="rounded-2xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition">
               Nouveau projet
             </button>
           )}
         </div>
 
-        {/* Projets en attente de validation — visible par Directeur technique */}
-        {isTechnique && pendingProjects.length > 0 && (
+        {/* Projets en attente — Directeur technique */}
+        {canValidate && pendingProjects.length > 0 && (
           <div>
             <h2 className="text-2xl font-semibold mb-4 text-left text-yellow-600 dark:text-yellow-300">Projets en attente de validation</h2>
             <div className="space-y-4">
@@ -240,7 +239,7 @@ export default function Projects() {
                   >
                     Détails
                   </button>
-                  {(hasPermission('manage_projects') && !isCommercial) && (
+                  {canModify && (
                     <button
                       onClick={() => setEditProject({ ...project })}
                       className="rounded-2xl bg-white/20 hover:bg-white/30 px-3 py-1 text-sm font-medium text-white transition"
@@ -259,9 +258,7 @@ export default function Projects() {
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm z-50">
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-md w-full">
               <h2 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Nouveau projet</h2>
-              {isCommercial && (
-                <p className="text-sm text-yellow-600 dark:text-yellow-300 mb-4">Ce projet sera soumis au Directeur technique pour validation.</p>
-              )}
+              <p className="text-sm text-yellow-600 dark:text-yellow-300 mb-4">Ce projet sera soumis au Directeur technique pour validation.</p>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">Nom du projet</label>
@@ -278,9 +275,7 @@ export default function Projects() {
                 {createError && <p className="text-sm text-red-500 dark:text-red-300">{createError}</p>}
               </div>
               <div className="mt-6 flex space-x-2">
-                <button onClick={handleCreateProject} className="rounded-2xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition">
-                  {isCommercial ? 'Soumettre' : 'Créer'}
-                </button>
+                <button onClick={handleCreateProject} className="rounded-2xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition">Soumettre</button>
                 <button onClick={() => { setShowForm(false); setCreateError(null); }} className="rounded-2xl bg-slate-200 dark:bg-slate-700 px-4 py-2 text-sm font-medium text-slate-800 dark:text-slate-200 transition hover:bg-slate-300 dark:hover:bg-slate-600">Annuler</button>
               </div>
             </div>
@@ -318,8 +313,8 @@ export default function Projects() {
                     className={inputClass}
                   >
                     <option value="">Sélectionner un coordinateur</option>
-                    {usersList.map(u => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    {coordinateurs.map(u => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
                     ))}
                   </select>
                 </div>
