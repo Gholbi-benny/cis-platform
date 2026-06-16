@@ -32,6 +32,7 @@ export default function Projects() {
   const [newProjectDescription, setNewProjectDescription] = useState("");
   const [newProjectEndDate, setNewProjectEndDate] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const isCommercial = user?.role === 'Directeur commercial';
   const isTechnique = user?.role === 'Directeur technique';
@@ -131,10 +132,20 @@ export default function Projects() {
   };
 
   const getFilteredProjects = () => {
+    let result = projects;
     if (isCommercial) {
-      return projects.filter(p => p.owner_id === user?.id);
+      result = result.filter(p => p.owner_id === user?.id);
     }
-    return projects;
+    if (searchTerm.trim()) {
+      const term = searchTerm.trim().toLowerCase();
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(term) ||
+        p.description.toLowerCase().includes(term) ||
+        p.manager.toLowerCase().includes(term)
+      );
+    }
+    // Garantie : les projets les plus récents (id le plus grand) apparaissent en premier
+    return [...result].sort((a, b) => b.id - a.id);
   };
 
   const filteredProjects = getFilteredProjects();
@@ -163,6 +174,28 @@ export default function Projects() {
           {canCreate && (
             <button onClick={() => setShowForm(true)} className="rounded-2xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition">
               Nouveau projet
+            </button>
+          )}
+        </div>
+
+        {/* Barre de recherche */}
+        <div className="relative max-w-xl mx-auto md:mx-0">
+          <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Rechercher un projet par nom, description ou coordinateur..."
+            className="w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              ✕
             </button>
           )}
         </div>
@@ -215,7 +248,9 @@ export default function Projects() {
         ) : error ? (
           <div className="rounded-2xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-200">{error}</div>
         ) : filteredProjects.length === 0 ? (
-          <div className="rounded-2xl border border-blue-500/50 bg-blue-500/10 p-6 text-sm text-blue-700 dark:text-blue-100">Aucun projet trouvé.</div>
+          <div className="rounded-2xl border border-blue-500/50 bg-blue-500/10 p-6 text-sm text-blue-700 dark:text-blue-100">
+            {searchTerm ? `Aucun projet ne correspond à "${searchTerm}".` : "Aucun projet trouvé."}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project) => (

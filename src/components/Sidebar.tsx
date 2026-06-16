@@ -10,6 +10,7 @@ export default function Sidebar() {
     { path: "/tasks", label: "Étapes", permission: "view_tasks" },
     { path: "/messages", label: "Messages clients", permission: "view_messages" },
     { path: "/technical-status", label: "Statut technique", permission: "update_tasks" },
+    { path: "/users", label: "Utilisateurs", permission: "manage_users" },
   ];
 
   return (

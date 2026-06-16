@@ -59,6 +59,12 @@ export type UpdateProjectRequest = Partial<Omit<Project, 'id'>> & { id: number }
 export type CreateTaskRequest = Omit<Task, 'id'>;
 export type UpdateTaskRequest = Partial<Omit<Task, 'id'>> & { id: number };
 export type UpdateUserRequest = Partial<User> & { id: number };
+export type CreateUserRequest = {
+  name: string;
+  email: string;
+  password: string;
+  role?: string;
+};
 
 export type TaskComment = {
   id: number;
@@ -150,6 +156,13 @@ export const updateUser = async (user: UpdateUserRequest): Promise<User> => {
   return request<User>(`/users/${user.id}`, {
     method: 'PUT',
     body: JSON.stringify(user),
+  });
+};
+
+export const createUser = async (newUser: CreateUserRequest): Promise<User> => {
+  return request<User>('/users', {
+    method: 'POST',
+    body: JSON.stringify(newUser),
   });
 };
 

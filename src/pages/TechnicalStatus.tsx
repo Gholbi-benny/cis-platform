@@ -21,6 +21,7 @@ export default function TechnicalStatus() {
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [localProjects, setLocalProjects] = useState<any[]>([]);
   const [deadlineEdits, setDeadlineEdits] = useState<Record<number, string>>({});
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -70,24 +71,15 @@ export default function TechnicalStatus() {
   };
 
   const handleDeadlineChange = (projectId: number, date: string) => {
-    console.log('Date changée:', projectId, date);
     setDeadlineEdits(prev => ({ ...prev, [projectId]: date }));
   };
 
   const handleDeadlineSave = async (projectId: number) => {
-    console.log('Clic sauvegarder, projectId:', projectId);
-    console.log('deadlineEdits:', deadlineEdits);
     const newDeadline = deadlineEdits[projectId];
-    console.log('newDeadline:', newDeadline);
-    if (!newDeadline) {
-      alert('Veuillez sélectionner une date d\'abord');
-      return;
-    }
+    if (!newDeadline) return;
     const project = localProjects.find((p: any) => p.id === projectId);
-    console.log('project trouvé:', project);
     if (!project) return;
     try {
-      console.log('Envoi API...');
       await updateProject({
         id: projectId,
         title: project.title ?? project.name,
@@ -95,12 +87,9 @@ export default function TechnicalStatus() {
         status: project.status ?? 'En cours',
         end_date: newDeadline,
       });
-      console.log('API OK');
       setLocalProjects(prev => prev.map(p => p.id === projectId ? { ...p, end_date: newDeadline } : p));
-      alert('Échéance sauvegardée !');
     } catch (err) {
-      console.error('Erreur:', err);
-      alert('Erreur lors de la sauvegarde');
+      console.error('Erreur sauvegarde échéance:', err);
     }
   };
 
@@ -122,9 +111,22 @@ export default function TechnicalStatus() {
   };
 
   const myProjectIds = new Set(technicalTasks.map(t => t.projectId));
-  const assignedProjects = localProjects.filter((p: any) =>
+  const allAssignedProjects = localProjects.filter((p: any) =>
     myProjectIds.has(p.id) || p.owner_id === user?.id
   );
+
+  // Filtrage par recherche + tri par plus récent
+  const applySearch = <T extends { id: number }>(items: T[], fields: (item: T) => string[]) => {
+    let result = items;
+    if (searchTerm.trim()) {
+      const term = searchTerm.trim().toLowerCase();
+      result = result.filter(item => fields(item).some(f => f.toLowerCase().includes(term)));
+    }
+    return [...result].sort((a, b) => b.id - a.id);
+  };
+
+  const assignedProjects = applySearch(allAssignedProjects, (p: any) => [p.title ?? p.name ?? '', p.description ?? '', p.owner_name ?? '']);
+  const filteredTechnicalTasks = applySearch(technicalTasks, (t) => [t.title, t.description]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -146,12 +148,36 @@ export default function TechnicalStatus() {
           </div>
         </div>
 
+        {/* Barre de recherche */}
+        <div className="relative max-w-xl mx-auto md:mx-0">
+          <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Rechercher un projet ou une étape..."
+            className="w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         {/* Projets */}
         <div>
           <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Projets assignés</h2>
           {assignedProjects.length === 0 ? (
             <div className="bg-slate-100 dark:bg-blue-600 border border-slate-200 dark:border-transparent p-6 rounded-3xl shadow-xl">
-              <p className="text-slate-600 dark:text-blue-100">Aucun projet assigné pour l'instant.</p>
+              <p className="text-slate-600 dark:text-blue-100">
+                {searchTerm ? `Aucun projet ne correspond à "${searchTerm}".` : "Aucun projet assigné pour l'instant."}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -178,14 +204,7 @@ export default function TechnicalStatus() {
                           onChange={(e) => handleDeadlineChange(project.id, e.target.value)}
                           className={inputClass}
                         />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            console.log('Bouton cliqué pour projet:', project.id);
-                            handleDeadlineSave(project.id);
-                          }}
-                          className="rounded-2xl bg-emerald-500 hover:bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition"
-                        >
+                        <button onClick={() => handleDeadlineSave(project.id)} className="rounded-2xl bg-white/20 hover:bg-white/30 px-4 py-2 text-sm font-semibold text-white transition">
                           Sauvegarder
                         </button>
                       </div>
@@ -205,13 +224,15 @@ export default function TechnicalStatus() {
         {/* Étapes */}
         <div>
           <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-white">Étapes assignées</h2>
-          {technicalTasks.length === 0 ? (
+          {filteredTechnicalTasks.length === 0 ? (
             <div className="bg-slate-100 dark:bg-blue-600 border border-slate-200 dark:border-transparent p-6 rounded-3xl shadow-xl">
-              <p className="text-slate-600 dark:text-blue-100">Aucune étape assignée pour l'instant.</p>
+              <p className="text-slate-600 dark:text-blue-100">
+                {searchTerm ? `Aucune étape ne correspond à "${searchTerm}".` : "Aucune étape assignée pour l'instant."}
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {technicalTasks.map(task => (
+              {filteredTechnicalTasks.map(task => (
                 <div key={task.id} className="bg-blue-600 p-6 rounded-3xl shadow-xl">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                     <div>

@@ -13,6 +13,7 @@ import Messages from "./pages/Messages";
 import TechnicalStatus from "./pages/TechnicalStatus";
 import Profile from "./pages/Profile";
 import ProjectDashboard from "./pages/ProjectDashboard";
+import Users from "./pages/Users";
 
 const getHomePage = (role?: string) => {
   switch (role) {
@@ -122,6 +123,16 @@ function App() {
                   <ProtectedRoute requiredPermission="update_tasks">
                     <AuthenticatedLayout>
                       <TechnicalStatus />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/users"
+                element={
+                  <ProtectedRoute requiredPermission="manage_users">
+                    <AuthenticatedLayout>
+                      <Users />
                     </AuthenticatedLayout>
                   </ProtectedRoute>
                 }

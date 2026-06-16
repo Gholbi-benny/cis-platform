@@ -17,7 +17,8 @@ export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [usersList, setUsersList] = useState<User[]>([]);
   const [projectsList, setProjectsList] = useState<ProjectItem[]>([]);
-  const [filter, setFilter] = useState<'all' | 'my' | 'pending' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -132,14 +133,28 @@ export default function Tasks() {
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
-    switch (filter) {
-      case 'my': return task.assignee === user?.name;
-      case 'pending': return task.status !== 'Terminé';
-      case 'completed': return task.status === 'Terminé';
-      default: return true;
+  const getFilteredTasks = () => {
+    let result = tasks.filter(task => {
+      switch (filter) {
+        case 'pending': return task.status !== 'Terminé';
+        case 'completed': return task.status === 'Terminé';
+        default: return true;
+      }
+    });
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.trim().toLowerCase();
+      result = result.filter(t =>
+        t.title.toLowerCase().includes(term) ||
+        t.description.toLowerCase().includes(term) ||
+        t.assignee.toLowerCase().includes(term)
+      );
     }
-  });
+
+    return [...result].sort((a, b) => b.id - a.id);
+  };
+
+  const filteredTasks = getFilteredTasks();
 
   const getStatusColor = (status: Task['status']) => {
     switch (status) {
@@ -183,11 +198,30 @@ export default function Tasks() {
           )}
         </div>
 
+        {/* Barre de recherche */}
+        <div className="relative max-w-xl mx-auto md:mx-0">
+          <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Rechercher une étape par titre, description ou assigné..."
+            className="w-full rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>Toutes</button>
-          {user?.role === 'Équipe technique' && (
-            <button onClick={() => setFilter('my')} className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${filter === 'my' ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>Mes étapes</button>
-          )}
           <button onClick={() => setFilter('pending')} className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${filter === 'pending' ? 'bg-sky-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>En attente</button>
           <button onClick={() => setFilter('completed')} className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${filter === 'completed' ? 'bg-sky-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'}`}>Terminées</button>
         </div>
@@ -202,7 +236,9 @@ export default function Tasks() {
         ) : error ? (
           <div className="rounded-2xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-200">{error}</div>
         ) : filteredTasks.length === 0 ? (
-          <div className="rounded-2xl border border-blue-500/50 bg-blue-500/10 p-6 text-sm text-blue-700 dark:text-blue-100">Aucune étape trouvée.</div>
+          <div className="rounded-2xl border border-blue-500/50 bg-blue-500/10 p-6 text-sm text-blue-700 dark:text-blue-100">
+            {searchTerm ? `Aucune étape ne correspond à "${searchTerm}".` : "Aucune étape trouvée."}
+          </div>
         ) : (
           <div className="space-y-4">
             {filteredTasks.map((task) => (
@@ -257,28 +293,6 @@ export default function Tasks() {
                   <div>
                     <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Statut</h3>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedTask.status)}`}>{selectedTask.status}</span>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2 text-slate-900 dark:text-white">Commentaires ({selectedTask.comments?.length ?? 0})</h3>
-                  {(selectedTask.comments?.length ?? 0) === 0 ? (
-                    <p className="text-slate-500">Aucun commentaire</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {selectedTask.comments.map(comment => (
-                        <div key={comment.id} className="p-3 bg-slate-100 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
-                          <div className="flex justify-between text-sm">
-                            <span className="font-medium text-slate-900 dark:text-slate-100">{comment.author}</span>
-                            <span className="text-slate-500">{comment.date}</span>
-                          </div>
-                          <p className="mt-1 text-slate-700 dark:text-slate-300">{comment.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mt-4">
-                    <textarea placeholder="Ajouter un commentaire..." className={inputClass} rows={3} />
-                    <button className="mt-2 rounded-2xl bg-sky-600 hover:bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition">Commenter</button>
                   </div>
                 </div>
               </div>

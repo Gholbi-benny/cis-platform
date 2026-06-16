@@ -25,6 +25,39 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /users - créer un utilisateur (réservé Directeur général / Directeur général adjoint)
+router.post('/', authMiddleware, async (req, res) => {
+  const allowedRoles = ['Directeur général', 'Directeur général adjoint'];
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({ error: 'Seuls le Directeur général et le Directeur général adjoint peuvent créer des utilisateurs.' });
+  }
+
+  const { name, email, password, role } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Nom, email et mot de passe sont requis.' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
+  }
+
+  try {
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existing.rows[0]) {
+      return res.status(409).json({ error: 'Un utilisateur avec cet email existe déjà.' });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
+      [name.trim(), email.trim(), hashed, role || 'Équipe technique']
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PUT /users/:id - modifier nom ou mot de passe
 router.put('/:id', authMiddleware, async (req, res) => {
   const { name, password } = req.body;
