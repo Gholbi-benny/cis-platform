@@ -65,6 +65,13 @@ export type CreateUserRequest = {
   password: string;
   role?: string;
 };
+export type AdminUpdateUserRequest = {
+  id: number;
+  name?: string;
+  email?: string;
+  role?: string;
+  password?: string;
+};
 
 export type TaskComment = {
   id: number;
@@ -163,6 +170,19 @@ export const createUser = async (newUser: CreateUserRequest): Promise<User> => {
   return request<User>('/users', {
     method: 'POST',
     body: JSON.stringify(newUser),
+  });
+};
+
+export const adminUpdateUser = async (user: AdminUpdateUserRequest): Promise<User> => {
+  return request<User>(`/users/${user.id}`, {
+    method: 'PUT',
+    body: JSON.stringify(user),
+  });
+};
+
+export const deleteUser = async (id: number): Promise<{ message: string }> => {
+  return request<{ message: string }>(`/users/${id}`, {
+    method: 'DELETE',
   });
 };
 
